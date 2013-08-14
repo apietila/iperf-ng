@@ -237,7 +237,6 @@ void Listener::Run( void ) {
             if ( tempSettings != NULL ) {
                 client_init( tempSettings );
                 if ( tempSettings->mMode == kTest_DualTest ) {
-		  WARN(1, "kTest_DualTest\n");
 #ifdef HAVE_THREAD
                     server->runNow =  tempSettings;
 #else
