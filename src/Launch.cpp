@@ -113,7 +113,7 @@ void client_spawn( thread_Settings *thread ) {
     // Let the server know about our settings
     theClient->InitiateServer();
 
-    // Run the test
+    // Run the test 
     theClient->Run();
     DELETE_PTR( theClient );
 }

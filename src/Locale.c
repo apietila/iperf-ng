@@ -261,10 +261,10 @@ const char reportCSV_bw_jitter_loss_format[] =
 "%s,%s,%d,%.1f-%.1f,%I64d,%I64d,%.3f,%d,%d,%.3f,%d\n";
 #else
 const char reportCSV_bw_format[] =
-"%s,%s,%d,%.1f-%.1f,%d,%d\n";
+"%s,%s,%d,%.1f-%.1f,%ld,%ld\n";
 
 const char reportCSV_bw_jitter_loss_format[] =
-"%s,%s,%d,%.1f-%.1f,%d,%d,%.3f,%d,%d,%.3f,%d\n";
+"%s,%s,%d,%.1f-%.1f,%ld,%ld,%.3f,%d,%d,%.3f,%d\n";
 #endif //WIN32
 #endif //HAVE_QUAD_SUPPORT
 /* -------------------------------------------------------------------

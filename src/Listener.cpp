@@ -242,16 +242,12 @@ void Listener::Run( void ) {
 #else
                     server->runNext = tempSettings;
 #endif
-		} else if (tempSettings->mMode == kTest_ServeClient ) {	
-		  // the server should act as a client based on
-		  // the tempSettings
-		  memcpy(server, tempSettings, sizeof( thread_Settings ));
-
+				} else if ( tempSettings->mMode == kTest_Reverse ) {	
+                    server->runNow =  tempSettings;
                 } else {
-		  server->runNext =  tempSettings;
+		  			server->runNext =  tempSettings;
                 }
-	    }
-
+	    	}
     
             // Start the server
 #if defined(WIN32) && defined(HAVE_THREAD)
@@ -266,8 +262,8 @@ void Listener::Run( void ) {
                 }
             } else
 #endif
-	    thread_start( server );
-
+            thread_start( server );
+    
             // create a new socket
             if ( UDP ) {
                 mSettings->mSock = -1; 

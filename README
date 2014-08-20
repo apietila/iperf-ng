@@ -17,3 +17,10 @@ All rights reserved
 See UI License (doc/ui_license.html) for complete details.
 
 $Id: README,v 1.1.1.1 2004/05/18 01:50:44 kgibbs Exp $
+
+--------------------
+
+20/08/2014:	Anna-Kaisa Pietilainen <anna-kaisa.pietilainen@inria.fr>
+
+			Adding a reverse thread mode where client can request the server
+			to send data to the client. This is useful for clients behind NAT.

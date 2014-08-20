@@ -108,6 +108,7 @@ const struct option long_options[] =
 {"bind",       required_argument, NULL, 'B'},
 {"compatibility",    no_argument, NULL, 'C'},
 {"daemon",           no_argument, NULL, 'D'},
+{"reverse",          no_argument, NULL, 'E'},
 {"file_input", required_argument, NULL, 'F'},
 {"stdin_input",      no_argument, NULL, 'I'},
 {"mss",        required_argument, NULL, 'M'},
@@ -158,6 +159,7 @@ const struct option env_options[] =
 {"IPERF_NODELAY",          no_argument, NULL, 'N'},
 {"IPERF_LISTENPORT", required_argument, NULL, 'L'},
 {"IPERF_PARALLEL",   required_argument, NULL, 'P'},
+{"IPERF_REVERSE",          no_argument, NULL, 'E'},
 {"IPERF_TOS",        required_argument, NULL, 'S'},
 {"IPERF_TTL",        required_argument, NULL, 'T'},
 {"IPERF_SINGLE_UDP",       no_argument, NULL, 'U'},
@@ -169,7 +171,7 @@ const struct option env_options[] =
 
 #define SHORT_OPTIONS()
 
-const char short_options[] = "1b:c:df:hi:l:mn:o:p:rst:uvw:x:y:B:CDF:IL:M:NP:RS:T:UVWZ:";
+const char short_options[] = "1b:c:df:hi:l:mn:o:p:rst:uvw:x:y:B:CDEF:IL:M:NP:RS:T:UVWZ:";
 
 /* -------------------------------------------------------------------
  * defaults
@@ -231,7 +233,6 @@ void Settings_Initialize( thread_Settings *main ) {
     main->mTTL          = 1;             // -T,  link-local TTL
     //main->mDomain     = kMode_IPv4;    // -V,
     //main->mSuggestWin = false;         // -W,  Suggest the window size.
-
 } // end Settings
 
 void Settings_Copy( thread_Settings *from, thread_Settings **into ) {
@@ -564,6 +565,18 @@ void Settings_Interpret( char option, const char *optarg, thread_Settings *mExtS
             setDaemon( mExtSettings );
             break;
 
+        case 'E': // test mode reverse
+            if ( mExtSettings->mThreadMode != kMode_Client ) {
+                fprintf( stderr, warn_invalid_server_option, option );
+                break;
+            }
+            if ( isCompat( mExtSettings ) ) {
+                fprintf( stderr, warn_invalid_compatibility_option, option );
+            }
+
+            mExtSettings->mMode = kTest_Reverse;
+            break;
+
         case 'F' : // Get the input for the data stream from a file
             if ( mExtSettings->mThreadMode != kMode_Client ) {
                 fprintf( stderr, warn_invalid_server_option, option );
@@ -699,6 +712,7 @@ void Settings_GetLowerCaseArg(const char *inarg, char *outarg) {
 
 /*
  * Settings_GenerateListenerSettings
+ *
  * Called to generate the settings to be passed to the Listener
  * instance that will handle dual testings from the client side
  * this should only return an instance if it was called on 
@@ -707,7 +721,10 @@ void Settings_GetLowerCaseArg(const char *inarg, char *outarg) {
  */
 void Settings_GenerateListenerSettings( thread_Settings *client, thread_Settings **listener ) {
     if ( !isCompat( client ) && 
-         (client->mMode == kTest_DualTest || client->mMode == kTest_TradeOff) ) {
+         (client->mMode == kTest_DualTest || 
+	  client->mMode == kTest_TradeOff || 
+	  client->mMode == kTest_Reverse)) 
+      {
         *listener = new thread_Settings;
         memcpy(*listener, client, sizeof( thread_Settings ));
         setCompat( (*listener) );
@@ -782,12 +799,13 @@ void Settings_GenerateClientSettings( thread_Settings *server,
         (*client)->mLocalhost  = NULL;
         (*client)->mOutputFileName = NULL;
 
-	// Anna: new server client mode
 	if ((flags & RUN_CLIENT) != 0) 
-	  (*client)->mMode = kTest_ServeClient;
-	else 
-	  (*client)->mMode       = ((flags & RUN_NOW) == 0 ?
-				    kTest_TradeOff : kTest_DualTest);
+	  (*client)->mMode = kTest_Reverse;
+	else if ((flags & RUN_NOW) != 0)
+	  (*client)->mMode = kTest_DualTest;
+	else
+	  (*client)->mMode = kTest_TradeOff;
+
         (*client)->mThreadMode = kMode_Client;
         if ( server->mLocalhost != NULL ) {
             (*client)->mLocalhost = new char[strlen( server->mLocalhost ) + 1];
@@ -799,7 +817,7 @@ void Settings_GenerateClientSettings( thread_Settings *server,
                        (*client)->mHost, REPORT_ADDRLEN);
         }
 #ifdef HAVE_IPV6
-          else {
+	else {
             inet_ntop( AF_INET6, &((sockaddr_in6*)&server->peer)->sin6_addr, 
                        (*client)->mHost, REPORT_ADDRLEN);
         }
@@ -845,5 +863,7 @@ void Settings_GenerateClientHdr( thread_Settings *client, client_hdr *hdr ) {
     }
     if ( client->mMode == kTest_DualTest ) {
         hdr->flags |= htonl(RUN_NOW);
+    } else if ( client->mMode == kTest_Reverse ) {
+        hdr->flags |= htonl(RUN_CLIENT);
     }
 }

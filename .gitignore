@@ -3,3 +3,8 @@
 *.a
 src/iperf
 config.log
+*.deps/*
+autom4te.cache
+*Makefile*
+configure
+config.status

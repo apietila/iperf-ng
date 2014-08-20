@@ -83,10 +83,8 @@ Client::Client( thread_Settings *inSettings ) {
         }
     }
 
-    if (mSettings->mMode != kTest_ServeClient) {
-      // connect
-      Connect( );
-    }
+    // connect
+    Connect( );
 
     if ( isReport( inSettings ) ) {
         ReportSettings( inSettings );
@@ -212,6 +210,11 @@ void Client::Run( void ) {
     int adjust = 0; 
 
     char* readAt = mBuf;
+
+    // Nothing to send in the Reverse test mode
+    if (mSettings->mMode == kTest_Reverse) {
+      return;
+    }
 
 #if HAVE_THREAD
     if ( !isUDP( mSettings ) ) {

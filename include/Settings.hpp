@@ -91,7 +91,7 @@ typedef enum TestMode {
     kTest_Normal = 0,
     kTest_DualTest,
     kTest_TradeOff,
-    kTest_ServeClient, // Anna: mode where server acts as client (no new socket)
+    kTest_Reverse,
     kTest_Unknown
 } TestMode;
 
@@ -152,7 +152,7 @@ typedef struct thread_Settings {
     // enums (which should be special int's)
     ThreadMode mThreadMode;         // -s or -c
     ReportMode mReportMode;
-    TestMode mMode;                 // -r or -d
+    TestMode mMode;                 // -r or -d or -E
     // Hopefully int64_t's
     max_size_t mUDPRate;            // -b or -u
     max_size_t mAmount;             // -n or -t
@@ -289,7 +289,6 @@ typedef struct thread_Settings {
 
 #define HEADER_VERSION1 0x80000000
 #define RUN_NOW         0x00000001
-// Anna: new flag for the client header requesting the server to act as client
 #define RUN_CLIENT      0x00000002
 
 // used to reference the 4 byte ID number we place in UDP datagrams
