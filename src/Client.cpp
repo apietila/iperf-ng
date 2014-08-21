@@ -211,11 +211,6 @@ void Client::Run( void ) {
 
     char* readAt = mBuf;
 
-    // Nothing to send in the Reverse test mode
-    if (mSettings->mMode == kTest_Reverse) {
-      return;
-    }
-
 #if HAVE_THREAD
     if ( !isUDP( mSettings ) ) {
 	RunTCP();
@@ -385,15 +380,16 @@ void Client::InitiateServer() {
  * ------------------------------------------------------------------- */
 
 void Client::Connect( ) {
-    int rc;
-    SockAddr_remoteAddr( mSettings );
+    if (mSettings->mSock == INVALID_SOCKET) {
+      int rc;
+      SockAddr_remoteAddr( mSettings );
 
-    assert( mSettings->inHostname != NULL );
+      assert( mSettings->inHostname != NULL );
 
-    // create an internet socket
-    int type = ( isUDP( mSettings )  ?  SOCK_DGRAM : SOCK_STREAM);
+      // create an internet socket
+      int type = ( isUDP( mSettings )  ?  SOCK_DGRAM : SOCK_STREAM);
 
-    int domain = (SockAddr_isIPv6( &mSettings->peer ) ? 
+      int domain = (SockAddr_isIPv6( &mSettings->peer ) ? 
 #ifdef HAVE_IPV6
                   AF_INET6
 #else
@@ -401,24 +397,25 @@ void Client::Connect( ) {
 #endif
                   : AF_INET);
 
-    mSettings->mSock = socket( domain, type, 0 );
-    WARN_errno( mSettings->mSock == INVALID_SOCKET, "socket" );
+      mSettings->mSock = socket( domain, type, 0 );
+      WARN_errno( mSettings->mSock == INVALID_SOCKET, "socket" );
 
-    SetSocketOptions( mSettings );
+      SetSocketOptions( mSettings );
 
 
-    SockAddr_localAddr( mSettings );
-    if ( mSettings->mLocalhost != NULL ) {
+      SockAddr_localAddr( mSettings );
+      if ( mSettings->mLocalhost != NULL ) {
         // bind socket to local address
         rc = bind( mSettings->mSock, (sockaddr*) &mSettings->local, 
                    SockAddr_get_sizeof_sockaddr( &mSettings->local ) );
         WARN_errno( rc == SOCKET_ERROR, "bind" );
-    }
+      }
 
-    // connect socket
-    rc = connect( mSettings->mSock, (sockaddr*) &mSettings->peer, 
-                  SockAddr_get_sizeof_sockaddr( &mSettings->peer ));
-    FAIL_errno( rc == SOCKET_ERROR, "connect", mSettings );
+      // connect socket
+      rc = connect( mSettings->mSock, (sockaddr*) &mSettings->peer, 
+		    SockAddr_get_sizeof_sockaddr( &mSettings->peer ));
+      FAIL_errno( rc == SOCKET_ERROR, "connect", mSettings );
+    }
 
     getsockname( mSettings->mSock, (sockaddr*) &mSettings->local, 
                  &mSettings->size_local );

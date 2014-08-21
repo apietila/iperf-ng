@@ -102,6 +102,7 @@ Server specific:\n\
 const char usage_long2[] = "\
 \n\
 Client specific:\n\
+  -2, --nat                client is behind a NAT (for -r and -E)\n\
   -b, --bandwidth #[KM]    for UDP, bandwidth to send at in bits/sec\n\
                            (default 1 Mbit/sec, implies -u)\n\
   -c, --client    <host>   run in client mode, connecting to <host>\n\
@@ -109,6 +110,7 @@ Client specific:\n\
   -n, --num       #[KM]    number of bytes to transmit (instead of -t)\n\
   -r, --tradeoff           Do a bidirectional test individually\n\
   -t, --time      #        time in seconds to transmit for (default 10 secs)\n\
+  -E, --reverse            run client in server mode, i.e. ask server to send data to us\n\
   -F, --fileinput <name>   input the data to be transmitted from a file\n\
   -I, --stdin              input the data to be transmitted from stdin\n\
   -L, --listenport #       port to receive bidirectional tests back on\n\

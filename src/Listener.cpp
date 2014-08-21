@@ -93,8 +93,10 @@ Listener::Listener( thread_Settings *inSettings ) {
     // initialize buffer
     mBuf = new char[ mSettings->mBufLen ];
 
-    // open listening socket 
-    Listen( ); 
+    if (mSettings->mSock == INVALID_SOCKET) {
+      // open listening socket (unless reusing existing socket)
+      Listen( ); 
+    }
     ReportSettings( inSettings );
 
 } // end Listener 
@@ -232,22 +234,21 @@ void Listener::Run( void ) {
                                                       hdr );
                 }
             }
-    
-    
+        
             if ( tempSettings != NULL ) {
                 client_init( tempSettings );
-                if ( tempSettings->mMode == kTest_DualTest ) {
+                if ( tempSettings->mMode == kTest_DualTest) {
 #ifdef HAVE_THREAD
                     server->runNow =  tempSettings;
 #else
                     server->runNext = tempSettings;
 #endif
-				} else if ( tempSettings->mMode == kTest_Reverse ) {	
+		} else if ( tempSettings->mMode == kTest_Reverse ) {	
                     server->runNow =  tempSettings;
                 } else {
-		  			server->runNext =  tempSettings;
+		  server->runNext =  tempSettings;
                 }
-	    	}
+	    }
     
             // Start the server
 #if defined(WIN32) && defined(HAVE_THREAD)
@@ -262,10 +263,21 @@ void Listener::Run( void ) {
                 }
             } else
 #endif
-            thread_start( server );
-    
-            // create a new socket
-            if ( UDP ) {
+
+	      if ( server->runNow !=NULL &&
+		   server->runNow->mMode == kTest_Reverse ) {
+		// start the client thread immediately
+		if (isNAT(server->runNow)) {
+		  // reuse the accepted connection socket in the client thread
+		  server->runNow->mSock = server->mSock;
+		}
+		thread_start( server->runNow );
+	      } else {
+		thread_start( server );
+	      }
+
+            // create a new socket (except on NAT clients)
+            if ( UDP && !isNAT(mSettings)) {
                 mSettings->mSock = -1; 
                 Listen( );
             }
@@ -447,6 +459,9 @@ void Listener::Accept( thread_Settings *server ) {
             }
             Mutex_Unlock( &clients_mutex );
         }
+    } else if (isNAT(server)) {
+      // FIXME: will not work for multistream tests
+      server->mSock = mSettings->mSock;
     } else {
         // Handles interupted accepts. Returns the newly connected socket.
         server->mSock = INVALID_SOCKET;
@@ -608,7 +623,7 @@ void Listener::UDPSingleServer( ) {
                          (sockaddr*) &server->peer, 
                          server->size_peer );
                 close( mSettings->mSock );
-                mSettings->mSock = -1; 
+                mSettings->mSock = INVALID_SOCKET; 
                 Listen( );
                 continue;
             }

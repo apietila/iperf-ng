@@ -113,8 +113,16 @@ void client_spawn( thread_Settings *thread ) {
     // Let the server know about our settings
     theClient->InitiateServer();
 
-    // Run the test 
-    theClient->Run();
+    if (thread->mMode != kTest_Reverse) {
+      // Run the test 
+      theClient->Run();
+    }
+    if (isNAT(thread) && !isCompat(thread) &&
+	thread->mMode != kTest_Normal && 
+	thread->runNext != NULL) {
+      // Reuse the client socket in the listener
+      thread->runNext->mSock = thread->mSock;
+    }
     DELETE_PTR( theClient );
 }
 
@@ -127,6 +135,7 @@ void client_spawn( thread_Settings *thread ) {
  */
 void client_init( thread_Settings *clients ) {
     thread_Settings *itr = NULL;
+    thread_Settings *list = NULL;
     thread_Settings *next = NULL;
 
     // Set the first thread to report Settings
@@ -134,7 +143,7 @@ void client_init( thread_Settings *clients ) {
     itr = clients;
 
     // See if we need to start a listener as well
-    Settings_GenerateListenerSettings( clients, &next );
+    Settings_GenerateListenerSettings( clients, &list );
 
     // Create a multiple report header to handle reporting the
     // sum of multiple client threads
@@ -144,11 +153,11 @@ void client_init( thread_Settings *clients ) {
     Mutex_Unlock( &groupCond );
 
 #ifdef HAVE_THREAD
-    if ( next != NULL ) {
+    if ( list != NULL && !isNAT(list)) {
         // We have threads and we need to start a listener so
-        // have it ran before the client is launched
-        itr->runNow = next;
-        itr = next;
+        // have it ran before the client is launched (unless behind NAT)
+        itr->runNow = list;
+        itr = list;
     }
 #endif
     // For each of the needed threads create a copy of the
@@ -161,10 +170,16 @@ void client_init( thread_Settings *clients ) {
         itr = next;
     }
 #ifndef HAVE_THREAD
-    if ( next != NULL ) {
+    if ( list != NULL ) {
         // We don't have threads and we need to start a listener so
         // have it ran after the client is finished
-        itr->runNext = next;
+        itr->runNext = list;
+    }
+#else
+    if ( list != NULL && isNAT(list) ) {
+        // We have threads and we need to start a listener so
+        // have it ran after the client is launched (when behind NAT)
+        itr->runNext = list;
     }
 #endif
 }

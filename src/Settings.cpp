@@ -84,6 +84,7 @@ void Settings_Interpret( char option, const char *optarg, thread_Settings *mExtS
 const struct option long_options[] =
 {
 {"singleclient",     no_argument, NULL, '1'},
+{"nat",              no_argument, NULL, '2'},
 {"bandwidth",  required_argument, NULL, 'b'},
 {"client",     required_argument, NULL, 'c'},
 {"dualtest",         no_argument, NULL, 'd'},
@@ -130,6 +131,7 @@ const struct option long_options[] =
 const struct option env_options[] =
 {
 {"IPERF_SINGLECLIENT",     no_argument, NULL, '1'},
+{"IPERF_NAT",              no_argument, NULL, '2'},
 {"IPERF_BANDWIDTH",  required_argument, NULL, 'b'},
 {"IPERF_CLIENT",     required_argument, NULL, 'c'},
 {"IPERF_DUALTEST",         no_argument, NULL, 'd'},
@@ -171,7 +173,7 @@ const struct option env_options[] =
 
 #define SHORT_OPTIONS()
 
-const char short_options[] = "1b:c:df:hi:l:mn:o:p:rst:uvw:x:y:B:CDEF:IL:M:NP:RS:T:UVWZ:";
+const char short_options[] = "12b:c:df:hi:l:mn:o:p:rst:uvw:x:y:B:CDEF:IL:M:NP:RS:T:UVWZ:";
 
 /* -------------------------------------------------------------------
  * defaults
@@ -316,6 +318,13 @@ void Settings_Interpret( char option, const char *optarg, thread_Settings *mExtS
     switch ( option ) {
         case '1': // Single Client
             setSingleClient( mExtSettings );
+            break;
+        case '2': // NAT Client
+            if ( mExtSettings->mThreadMode != kMode_Client ) {
+                fprintf( stderr, warn_invalid_server_option, option );
+                break;
+            }
+            setNAT( mExtSettings );
             break;
         case 'b': // UDP bandwidth
             if ( !isUDP( mExtSettings ) ) {
@@ -570,10 +579,6 @@ void Settings_Interpret( char option, const char *optarg, thread_Settings *mExtS
                 fprintf( stderr, warn_invalid_server_option, option );
                 break;
             }
-            if ( isCompat( mExtSettings ) ) {
-                fprintf( stderr, warn_invalid_compatibility_option, option );
-            }
-
             mExtSettings->mMode = kTest_Reverse;
             break;
 
@@ -720,10 +725,10 @@ void Settings_GetLowerCaseArg(const char *inarg, char *outarg) {
  * for client side execution 
  */
 void Settings_GenerateListenerSettings( thread_Settings *client, thread_Settings **listener ) {
-    if ( !isCompat( client ) && 
+     if ( !isCompat( client ) && 
          (client->mMode == kTest_DualTest || 
-	  client->mMode == kTest_TradeOff || 
-	  client->mMode == kTest_Reverse)) 
+	  client->mMode == kTest_TradeOff ||
+ 	  client->mMode == kTest_Reverse))
       {
         *listener = new thread_Settings;
         memcpy(*listener, client, sizeof( thread_Settings ));
@@ -755,6 +760,7 @@ void Settings_GenerateListenerSettings( thread_Settings *client, thread_Settings
 
 /*
  * Settings_GenerateSpeakerSettings
+ *
  * Called to generate the settings to be passed to the Speaker
  * instance that will handle dual testings from the server side
  * this should only return an instance if it was called on 
@@ -799,12 +805,13 @@ void Settings_GenerateClientSettings( thread_Settings *server,
         (*client)->mLocalhost  = NULL;
         (*client)->mOutputFileName = NULL;
 
-	if ((flags & RUN_CLIENT) != 0) 
-	  (*client)->mMode = kTest_Reverse;
-	else if ((flags & RUN_NOW) != 0)
-	  (*client)->mMode = kTest_DualTest;
+	if ((flags & RUN_NOW) != 0)
+	  (*client)->mMode = kTest_DualTest; // or kTest_Reverse, no difference
 	else
 	  (*client)->mMode = kTest_TradeOff;
+
+	if ((flags & RUN_NAT) != 0)
+	  setNAT( (*client) );
 
         (*client)->mThreadMode = kMode_Client;
         if ( server->mLocalhost != NULL ) {
@@ -861,9 +868,10 @@ void Settings_GenerateClientHdr( thread_Settings *client, client_hdr *hdr ) {
         hdr->mAmount    = htonl((long)client->mAmount);
         hdr->mAmount &= htonl( 0x7FFFFFFF );
     }
-    if ( client->mMode == kTest_DualTest ) {
+    if ( client->mMode == kTest_DualTest || client->mMode == kTest_Reverse) {
         hdr->flags |= htonl(RUN_NOW);
-    } else if ( client->mMode == kTest_Reverse ) {
-        hdr->flags |= htonl(RUN_CLIENT);
+    }
+    if ( isNAT(client)) {
+        hdr->flags |= htonl(RUN_NAT);
     }
 }
