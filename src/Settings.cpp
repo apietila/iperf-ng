@@ -805,13 +805,18 @@ void Settings_GenerateClientSettings( thread_Settings *server,
         (*client)->mLocalhost  = NULL;
         (*client)->mOutputFileName = NULL;
 
-	if ((flags & RUN_NOW) != 0)
+	if ((flags & RUN_NOW) != 0) {
 	  (*client)->mMode = kTest_DualTest; // or kTest_Reverse, no difference
-	else
+	  fprintf( stderr, "genclient: got DualTest or Reverse test option\n"); 
+	} else {
 	  (*client)->mMode = kTest_TradeOff;
+	  fprintf( stderr, "genclient: got TradeOff test option\n"); 
+	}
 
-	if ((flags & RUN_NAT) != 0)
+	if ((flags & RUN_NAT) == 2) {
 	  setNAT( (*client) );
+	  fprintf( stderr, "genclient: client behind NAT option\n"); 
+	}
 
         (*client)->mThreadMode = kMode_Client;
         if ( server->mLocalhost != NULL ) {
