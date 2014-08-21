@@ -807,10 +807,10 @@ void Settings_GenerateClientSettings( thread_Settings *server,
 
 	if ((flags & RUN_NOW) != 0) {
 	  (*client)->mMode = kTest_DualTest; // or kTest_Reverse, no difference
-	  fprintf( stderr, "genclient: got DualTest or Reverse test option\n"); 
+	  fprintf( stderr, "genclient: DualTest or Reverse test option\n"); 
 	} else {
 	  (*client)->mMode = kTest_TradeOff;
-	  fprintf( stderr, "genclient: got TradeOff test option\n"); 
+	  fprintf( stderr, "genclient: TradeOff test option\n"); 
 	}
 
 	if ((flags & RUN_NAT) == 2) {

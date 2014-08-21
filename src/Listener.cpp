@@ -237,6 +237,12 @@ void Listener::Run( void ) {
         
             if ( tempSettings != NULL ) {
                 client_init( tempSettings );
+		if (isNAT(tempSettings)) {
+		  // reuse the accepted connection socket in the client thread
+		  tempSettings->mSock = server->mSock;
+		  fprintf( stderr, "listener: reuse single socket\n"); 
+		}
+
                 if ( tempSettings->mMode == kTest_DualTest) {
 #ifdef HAVE_THREAD
                     server->runNow =  tempSettings;
@@ -244,15 +250,22 @@ void Listener::Run( void ) {
                     server->runNext = tempSettings;
 #endif
 		} else if ( tempSettings->mMode == kTest_Reverse ) {	
-                    server->runNow =  tempSettings;
+		  server->runNow =  tempSettings;
                 } else {
 		  server->runNext =  tempSettings;
                 }
 	    }
     
             // Start the server
+	    if ( server->runNow != NULL &&
+		 server->runNow->mMode == kTest_Reverse ) {
+	      // start the client thread immediately
+	      fprintf( stderr, "listener: skip server, do client\n"); 
+	      thread_start( server->runNow );
+	    } else 
 #if defined(WIN32) && defined(HAVE_THREAD)
-            if ( UDP ) {
+	      if ( UDP ) {
+		fprintf( stderr, "listener: win32 stuff\n"); 
                 // WIN32 does bad UDP handling so run single threaded
                 if ( server->runNow != NULL ) {
                     thread_start( server->runNow );
@@ -261,20 +274,12 @@ void Listener::Run( void ) {
                 if ( server->runNext != NULL ) {
                     thread_start( server->runNext );
                 }
-            } else
+	      } else
 #endif
-
-	      if ( server->runNow !=NULL &&
-		   server->runNow->mMode == kTest_Reverse ) {
-		// start the client thread immediately
-		if (isNAT(server->runNow)) {
-		  // reuse the accepted connection socket in the client thread
-		  server->runNow->mSock = server->mSock;
-		}
-		thread_start( server->runNow );
-	      } else {
+		{
+		fprintf( stderr, "listener: start server\n"); 
 		thread_start( server );
-	      }
+		}	    
 
             // create a new socket (except on NAT clients)
             if ( UDP && !isNAT(mSettings)) {
