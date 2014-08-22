@@ -81,9 +81,12 @@ Server::Server( thread_Settings *inSettings ) {
 
 Server::~Server() {
     if ( mSettings->mSock != INVALID_SOCKET ) {
+      if (mSettings->runNext == NULL ||
+	  !isNAT(mSettings->runNext)) {
         int rc = close( mSettings->mSock );
         WARN_errno( rc == SOCKET_ERROR, "close" );
         mSettings->mSock = INVALID_SOCKET;
+      } // else we should have a client next re-using the socket
     }
     DELETE_ARRAY( mBuf );
 }

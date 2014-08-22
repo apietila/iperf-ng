@@ -212,6 +212,7 @@ typedef struct thread_Settings {
 #define FLAG_SINGLEUDP      0x00200000
 #define FLAG_CONGESTION     0x00400000
 #define FLAG_NAT            0x00800000
+#define FLAG_ONSERVER       0x01000000
 
 #define isBuflenSet(settings)      ((settings->flags & FLAG_BUFLENSET) != 0)
 #define isCompat(settings)         ((settings->flags & FLAG_COMPAT) != 0)
@@ -239,6 +240,7 @@ typedef struct thread_Settings {
 #define isSingleUDP(settings)      ((settings->flags & FLAG_SINGLEUDP) != 0)
 #define isCongestionControl(settings) ((settings->flags & FLAG_CONGESTION) != 0)
 #define isNAT(settings)            ((settings->flags & FLAG_NAT) != 0)
+#define isOnServer(settings)       ((settings->flags & FLAG_ONSERVER) != 0)
 
 #define setBuflenSet(settings)     settings->flags |= FLAG_BUFLENSET
 #define setCompat(settings)        settings->flags |= FLAG_COMPAT
@@ -264,6 +266,7 @@ typedef struct thread_Settings {
 #define setSingleUDP(settings)     settings->flags |= FLAG_SINGLEUDP
 #define setCongestionControl(settings) settings->flags |= FLAG_CONGESTION
 #define setNAT(settings)           settings->flags |= FLAG_NAT
+#define setOnServer(settings)      settings->flags |= FLAG_ONSERVER
 
 #define unsetBuflenSet(settings)   settings->flags &= ~FLAG_BUFLENSET
 #define unsetCompat(settings)      settings->flags &= ~FLAG_COMPAT
@@ -289,10 +292,12 @@ typedef struct thread_Settings {
 #define unsetSingleUDP(settings)      settings->flags &= ~FLAG_SINGLEUDP
 #define unsetCongestionControl(settings) settings->flags &= ~FLAG_CONGESTION
 #define unsetNAT(settings)            settings->flags &= ~FLAG_NAT
+#define unsetOnServer(settings)       settings->flags &= ~FLAG_ONSERVER
 
 #define HEADER_VERSION1 0x80000000
-#define RUN_NOW         0x00000001
-#define RUN_NAT         0x00000002
+#define RUN_DUAL        0x00000001 // kTest_DualTest flag
+#define RUN_REV         0x00000002 // kTest_Reverse flag
+#define RUN_NAT         0x00000004 // client behind nat
 
 // used to reference the 4 byte ID number we place in UDP datagrams
 // use int32_t if possible, otherwise a 32 bit bitfield (e.g. on J90) 

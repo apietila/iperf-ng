@@ -105,9 +105,17 @@ Client::Client( thread_Settings *inSettings ) {
 
 Client::~Client() {
     if ( mSettings->mSock != INVALID_SOCKET ) {
+      if (isNAT(mSettings) && !isOnServer(mSettings) &&
+	  mSettings->mMode != kTest_Normal && 
+	  mSettings->runNext != NULL) {
+	// Pass the client socket to the next thread (listener)
+	mSettings->runNext->mSock = mSettings->mSock;
+	mSettings->runNext->mPort = SockAddr_getPort(&(mSettings->local));
+      } else {
         int rc = close( mSettings->mSock );
         WARN_errno( rc == SOCKET_ERROR, "close" );
         mSettings->mSock = INVALID_SOCKET;
+      }
     }
     DELETE_ARRAY( mBuf );
 } // end ~Client
@@ -356,16 +364,26 @@ void Client::Run( void ) {
 void Client::InitiateServer() {
     if ( !isCompat( mSettings ) ) {
         int currLen;
+	int size;
         client_hdr* temp_hdr;
         if ( isUDP( mSettings ) ) {
+	    // fill in the correct headers in case we send the pkt now
+	    struct timeval packetTime;
+	    gettimeofday( &packetTime, NULL );
             UDP_datagram *UDPhdr = (UDP_datagram *)mBuf;
+	    UDPhdr->id      = htonl( 0 ); 
+	    UDPhdr->tv_sec  = htonl( packetTime.tv_sec ); 
+	    UDPhdr->tv_usec = htonl( packetTime.tv_usec ); 
             temp_hdr = (client_hdr*)(UDPhdr + 1);
+	    size = mSettings->mBufLen;
         } else {
             temp_hdr = (client_hdr*)mBuf;
+	    size = sizeof(client_hdr);
         }
         Settings_GenerateClientHdr( mSettings, temp_hdr );
-        if ( !isUDP( mSettings ) ) {
-            currLen = send( mSettings->mSock, mBuf, sizeof(client_hdr), 0 );
+        if ( !isUDP( mSettings ) || 
+	     (mSettings->mMode == kTest_Reverse && !isOnServer(mSettings))) {
+            currLen = send( mSettings->mSock, mBuf, size, 0 );
             if ( currLen < 0 ) {
                 WARN_errno( currLen < 0, "write1" );
             }
@@ -380,10 +398,10 @@ void Client::InitiateServer() {
  * ------------------------------------------------------------------- */
 
 void Client::Connect( ) {
-    if (mSettings->mSock == INVALID_SOCKET) {
-      int rc;
-      SockAddr_remoteAddr( mSettings );
+  int rc;
+  SockAddr_remoteAddr( mSettings );
 
+  if (!isOnServer(mSettings) || !isNAT(mSettings)) {
       assert( mSettings->inHostname != NULL );
 
       // create an internet socket

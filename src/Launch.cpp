@@ -91,12 +91,15 @@ void listener_spawn( thread_Settings *thread ) {
 void server_spawn( thread_Settings *thread) {
     Server *theServer = NULL;
 
-    // Start up the server
-    theServer = new Server( thread );
+    if (thread->mMode != kTest_Reverse || !isOnServer(thread)) {
+      // Start up the server
+      theServer = new Server( thread );
     
-    // Run the test
-    theServer->Run();
-    DELETE_PTR( theServer);
+      // Run the test (nothing serve in server side kTest_Reverse)
+      theServer->Run();
+
+      DELETE_PTR( theServer);
+    }
 }
 
 /*
@@ -107,21 +110,15 @@ void server_spawn( thread_Settings *thread) {
 void client_spawn( thread_Settings *thread ) {
     Client *theClient = NULL;
 
-    //start up the client
+    // start up the client
     theClient = new Client( thread );
 
     // Let the server know about our settings
     theClient->InitiateServer();
 
-    if (thread->mMode != kTest_Reverse) {
-      // Run the test 
+    if (thread->mMode != kTest_Reverse || isOnServer(thread)) {
+      // Run the test (nothing to send in client side kTest_Reverse)
       theClient->Run();
-    }
-    if (isNAT(thread) && !isCompat(thread) &&
-	thread->mMode != kTest_Normal && 
-	thread->runNext != NULL) {
-      // Reuse the client socket in the listener
-      thread->runNext->mSock = thread->mSock;
     }
     DELETE_PTR( theClient );
 }
@@ -138,8 +135,11 @@ void client_init( thread_Settings *clients ) {
     thread_Settings *list = NULL;
     thread_Settings *next = NULL;
 
-    // Set the first thread to report Settings
+    // Set the first thread to report Settings (except cli side Reverse)
     setReport( clients );
+    if (clients->mMode == kTest_Reverse && !isOnServer(clients)) {
+      unsetReport( clients );
+    }
     itr = clients;
 
     // See if we need to start a listener as well

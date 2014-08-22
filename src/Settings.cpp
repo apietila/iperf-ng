@@ -235,6 +235,7 @@ void Settings_Initialize( thread_Settings *main ) {
     main->mTTL          = 1;             // -T,  link-local TTL
     //main->mDomain     = kMode_IPv4;    // -V,
     //main->mSuggestWin = false;         // -W,  Suggest the window size.
+
 } // end Settings
 
 void Settings_Copy( thread_Settings *from, thread_Settings **into ) {
@@ -728,8 +729,7 @@ void Settings_GenerateListenerSettings( thread_Settings *client, thread_Settings
      if ( !isCompat( client ) && 
          (client->mMode == kTest_DualTest || 
 	  client->mMode == kTest_TradeOff ||
- 	  client->mMode == kTest_Reverse))
-      {
+ 	  client->mMode == kTest_Reverse) ) {
         *listener = new thread_Settings;
         memcpy(*listener, client, sizeof( thread_Settings ));
         setCompat( (*listener) );
@@ -772,11 +772,11 @@ void Settings_GenerateClientSettings( thread_Settings *server,
                                       thread_Settings **client,
                                       client_hdr *hdr ) {
     int flags = ntohl(hdr->flags);
-
     if ( (flags & HEADER_VERSION1) != 0 ) {
         *client = new thread_Settings;
         memcpy(*client, server, sizeof( thread_Settings ));
         setCompat( (*client) );
+        setOnServer( (*client) );
         (*client)->mTID = thread_zeroid();
         (*client)->mPort       = (unsigned short) ntohl(hdr->mPort);
         (*client)->mThreads    = ntohl(hdr->numThreads);
@@ -805,17 +805,16 @@ void Settings_GenerateClientSettings( thread_Settings *server,
         (*client)->mLocalhost  = NULL;
         (*client)->mOutputFileName = NULL;
 
-	if ((flags & RUN_NOW) != 0) {
-	  (*client)->mMode = kTest_DualTest; // or kTest_Reverse, no difference
-	  fprintf( stderr, "genclient: DualTest or Reverse test option\n"); 
+	if ((flags & RUN_DUAL) != 0) {
+	  (*client)->mMode = kTest_DualTest;
+	} else if ((flags & RUN_REV) != 0) {
+	  (*client)->mMode = kTest_Reverse;
 	} else {
 	  (*client)->mMode = kTest_TradeOff;
-	  fprintf( stderr, "genclient: TradeOff test option\n"); 
 	}
 
-	if ((flags & RUN_NAT) == 2) {
+	if ((flags & RUN_NAT) != 0) {
 	  setNAT( (*client) );
-	  fprintf( stderr, "genclient: client behind NAT option\n"); 
 	}
 
         (*client)->mThreadMode = kMode_Client;
@@ -829,7 +828,7 @@ void Settings_GenerateClientSettings( thread_Settings *server,
                        (*client)->mHost, REPORT_ADDRLEN);
         }
 #ifdef HAVE_IPV6
-	else {
+          else {
             inet_ntop( AF_INET6, &((sockaddr_in6*)&server->peer)->sin6_addr, 
                        (*client)->mHost, REPORT_ADDRLEN);
         }
@@ -861,8 +860,11 @@ void Settings_GenerateClientHdr( thread_Settings *client, client_hdr *hdr ) {
     } else {
         hdr->mWinBand  = htonl(client->mTCPWin);
     }
-    if ( client->mListenPort != 0 ) {
+    if ( client->mListenPort != 0 && !isNAT(client)) {
         hdr->mPort  = htonl(client->mListenPort);
+    } else if (isNAT(client)) {
+        // for reporting, fill in the correct local port
+        hdr->mPort  = htonl(SockAddr_getPort(&(client->local)));
     } else {
         hdr->mPort  = htonl(client->mPort);
     }
@@ -873,10 +875,16 @@ void Settings_GenerateClientHdr( thread_Settings *client, client_hdr *hdr ) {
         hdr->mAmount    = htonl((long)client->mAmount);
         hdr->mAmount &= htonl( 0x7FFFFFFF );
     }
-    if ( client->mMode == kTest_DualTest || client->mMode == kTest_Reverse) {
-        hdr->flags |= htonl(RUN_NOW);
-    }
-    if ( isNAT(client)) {
+    if ( client->mMode != kTest_Normal ) {
+      // flags for reverese direction testing
+      if ( client->mMode == kTest_DualTest) {
+        hdr->flags |= htonl(RUN_DUAL);
+      } 
+      if ( client->mMode == kTest_Reverse) {
+        hdr->flags |= htonl(RUN_REV);
+      }
+      if ( isNAT(client)) {
         hdr->flags |= htonl(RUN_NAT);
+      }
     }
 }

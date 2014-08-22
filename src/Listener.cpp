@@ -93,10 +93,8 @@ Listener::Listener( thread_Settings *inSettings ) {
     // initialize buffer
     mBuf = new char[ mSettings->mBufLen ];
 
-    if (mSettings->mSock == INVALID_SOCKET) {
-      // open listening socket (unless reusing existing socket)
-      Listen( ); 
-    }
+    // open listening socket 
+    Listen(); 
     ReportSettings( inSettings );
 
 } // end Listener 
@@ -106,9 +104,11 @@ Listener::Listener( thread_Settings *inSettings ) {
  * ------------------------------------------------------------------- */ 
 Listener::~Listener() {
     if ( mSettings->mSock != INVALID_SOCKET ) {
+      if (!isNAT(mSettings) || isOnServer(mSettings)) {
         int rc = close( mSettings->mSock );
         WARN_errno( rc == SOCKET_ERROR, "close" );
         mSettings->mSock = INVALID_SOCKET;
+      } // else we should have an active server using the socket
     }
     DELETE_ARRAY( mBuf );
 } // end ~Listener 
@@ -233,39 +233,31 @@ void Listener::Run( void ) {
                     Settings_GenerateClientSettings( server, &tempSettings, 
                                                       hdr );
                 }
-            }
-        
+            }    
+    
             if ( tempSettings != NULL ) {
                 client_init( tempSettings );
-		if (isNAT(tempSettings)) {
+		if (isNAT(tempSettings) && isOnServer(tempSettings)) {
 		  // reuse the accepted connection socket in the client thread
 		  tempSettings->mSock = server->mSock;
-		  fprintf( stderr, "listener: reuse single socket\n"); 
+		  tempSettings->mPort = SockAddr_getPort(&(server->peer));
 		}
-
-                if ( tempSettings->mMode == kTest_DualTest) {
+		server->mMode = tempSettings->mMode;
+                if ( tempSettings->mMode == kTest_DualTest ||
+		     tempSettings->mMode == kTest_Reverse) {
 #ifdef HAVE_THREAD
                     server->runNow =  tempSettings;
 #else
                     server->runNext = tempSettings;
 #endif
-		} else if ( tempSettings->mMode == kTest_Reverse ) {	
-		  server->runNow =  tempSettings;
                 } else {
-		  server->runNext =  tempSettings;
+                    server->runNext =  tempSettings;
                 }
-	    }
+            }
     
             // Start the server
-	    if ( server->runNow != NULL &&
-		 server->runNow->mMode == kTest_Reverse ) {
-	      // start the client thread immediately
-	      fprintf( stderr, "listener: skip server, do client\n"); 
-	      thread_start( server->runNow );
-	    } else 
 #if defined(WIN32) && defined(HAVE_THREAD)
-	      if ( UDP ) {
-		fprintf( stderr, "listener: win32 stuff\n"); 
+            if ( UDP ) {
                 // WIN32 does bad UDP handling so run single threaded
                 if ( server->runNow != NULL ) {
                     thread_start( server->runNow );
@@ -274,13 +266,10 @@ void Listener::Run( void ) {
                 if ( server->runNext != NULL ) {
                     thread_start( server->runNext );
                 }
-	      } else
+            } else
 #endif
-		{
-		fprintf( stderr, "listener: start server\n"); 
-		thread_start( server );
-		}	    
-
+            thread_start( server );
+    
             // create a new socket (except on NAT clients)
             if ( UDP && !isNAT(mSettings)) {
                 mSettings->mSock = -1; 
@@ -311,6 +300,9 @@ void Listener::Listen( ) {
     int rc;
 
     SockAddr_localAddr( mSettings );
+
+    if (!isOnServer(mSettings) && isNAT(mSettings))
+      return;
 
     // create an internet TCP socket
     int type = (isUDP( mSettings )  ?  SOCK_DGRAM  :  SOCK_STREAM);
@@ -435,7 +427,7 @@ void Listener::McastSetTTL( int val ) {
 void Listener::Accept( thread_Settings *server ) {
 
     server->size_peer = sizeof(iperf_sockaddr); 
-    if ( isUDP( server ) ) {
+    if ( isUDP( server ) && !isNAT( server ) ) {
         /* ------------------------------------------------------------------- 
          * Do the equivalent of an accept() call for UDP sockets. This waits 
          * on a listening UDP socket until we get a datagram. 
@@ -464,9 +456,24 @@ void Listener::Accept( thread_Settings *server ) {
             }
             Mutex_Unlock( &clients_mutex );
         }
+    } else if ( isUDP( server ) && isNAT( server ) ) {
+        // client side fake accept on already connected UDP socket
+        int rc;
+        server->mSock = INVALID_SOCKET;
+        while ( server->mSock == INVALID_SOCKET ) {
+            rc = recv( mSettings->mSock, mBuf, mSettings->mBufLen, 0 );
+            FAIL_errno( rc == SOCKET_ERROR, "recv", mSettings );
+            server->mSock = mSettings->mSock;
+            server->mPort = mSettings->mPort;
+	    getpeername( server->mSock, (sockaddr*) &server->peer,
+			 &server->size_peer );
+        }
     } else if (isNAT(server)) {
-      // FIXME: will not work for multistream tests
-      server->mSock = mSettings->mSock;
+        // client side fake accept on already connected TCP socket
+        server->mSock = mSettings->mSock;
+	server->mPort = mSettings->mPort;
+	getpeername( server->mSock, (sockaddr*) &server->peer,
+		     &server->size_peer );
     } else {
         // Handles interupted accepts. Returns the newly connected socket.
         server->mSock = INVALID_SOCKET;
@@ -502,7 +509,6 @@ void Listener::UDPSingleServer( ) {
     }
     Settings_Copy( mSettings, &server );
     server->mThreadMode = kMode_Server;
-
 
     // Accept each packet, 
     // If there is no existing client, then start  

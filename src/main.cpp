@@ -191,7 +191,9 @@ int main( int argc, char **argv ) {
         // initialize client(s)
         if ( ext_gSettings->mThreadMode == kMode_Client ) {
             client_init( ext_gSettings );
-        }
+        } else {
+	  setOnServer( ext_gSettings );
+	}
 
 #ifdef HAVE_THREAD
         // start up the reporter and client(s) or listener
