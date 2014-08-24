@@ -23,6 +23,7 @@ iperf_SOURCES = \
 		Locale.c \
 		PerfSocket.cpp \
 		ReportCSV.c \
+		ReportJSON.c \
 		ReportDefault.c \
 		Reporter.c \
 		Server.cpp \
