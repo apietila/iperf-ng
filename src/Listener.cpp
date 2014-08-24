@@ -456,7 +456,7 @@ void Listener::Accept( thread_Settings *server ) {
             }
             Mutex_Unlock( &clients_mutex );
         }
-    } else if ( isUDP( server ) && isNAT( server ) ) {
+    } else if ( isUDP( server ) && isNAT( server ) && !isOnServer( server ) ) {
         // client side fake accept on already connected UDP socket
         int rc;
         server->mSock = INVALID_SOCKET;
@@ -468,7 +468,7 @@ void Listener::Accept( thread_Settings *server ) {
 	    getpeername( server->mSock, (sockaddr*) &server->peer,
 			 &server->size_peer );
         }
-    } else if (isNAT(server)) {
+    } else if (isNAT(server) && !isOnServer( server ) ) {
         // client side fake accept on already connected TCP socket
         server->mSock = mSettings->mSock;
 	server->mPort = mSettings->mPort;

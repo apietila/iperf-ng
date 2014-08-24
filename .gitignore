@@ -2,6 +2,7 @@
 *~
 *.a
 src/iperf
+config.h
 config.log
 *.deps*
 autom4te.cache
