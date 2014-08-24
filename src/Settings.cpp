@@ -542,6 +542,10 @@ void Settings_Interpret( char option, const char *optarg, thread_Settings *mExtS
                 case 'C':
                     mExtSettings->mReportMode = kReport_CSV;
                     break;
+                case 'j':
+                case 'J':
+                    mExtSettings->mReportMode = kReport_JSON;
+                    break;
                 default:
                     fprintf( stderr, warn_invalid_report_style, optarg );
             }

@@ -83,6 +83,7 @@ typedef enum ReportMode {
     kReport_Default = 0,
     kReport_CSV,
     //kReport_XML,
+    kReport_JSON,
     kReport_MAXIMUM
 } ReportMode;
 

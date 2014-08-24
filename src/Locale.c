@@ -120,7 +120,7 @@ Client specific:\n\
 \n\
 Miscellaneous:\n\
   -x, --reportexclude [CDMSV]   exclude C(connection) D(data) M(multicast) S(settings) V(server) reports\n\
-  -y, --reportstyle C      report as a Comma-Separated Values\n\
+  -y, --reportstyle [CJ]   report as a Comma-Separated Values (C) or JSON (J)\n\
   -h, --help               print this message and quit\n\
   -v, --version            print version information and quit\n\
 \n\
@@ -269,6 +269,40 @@ const char reportCSV_bw_jitter_loss_format[] =
 "%s,%s,%d,%.1f-%.1f,%ld,%ld,%.3f,%d,%d,%.3f,%d\n";
 #endif //WIN32
 #endif //HAVE_QUAD_SUPPORT
+
+const char reportJSON_peer[] =
+"{\"local_addr\":%s,\"local_port\":%u,\"peer_addr\":%s,\"peer_port\":%u}";
+
+#ifdef HAVE_QUAD_SUPPORT
+#ifdef HAVE_PRINTF_QD
+const char reportJSON_bw_format[] =
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%qd,\"rate\":%qd}\n";
+
+const char reportJSON_bw_jitter_loss_format[] =
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%qd,\"rate\":%qd,\"jitter\":%.3f,\"error_cnt\":%d,\"pkt_cnt\":%d,\"loss_rate\":%.3f,\"out_off_order_cnt\":%d}\n";
+#else // HAVE_PRINTF_QD
+const char reportJSON_bw_format[] =
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%lld,\"rate\":%lld}\n";
+
+const char reportJSON_bw_jitter_loss_format[] =
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%lld,\"rate\":%lld,\"jitter\":%.3f,\"error_cnt\":%d,\"pkt_cnt\":%d,\"loss_rate\":%.3f,\"out_off_order_cnt\":%d}\n";
+#endif // HAVE_PRINTF_QD
+#else // HAVE_QUAD_SUPPORT
+#ifdef WIN32
+const char reportJSON_bw_format[] =
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%I64d,\"rate\":%I64d}\n";
+
+const char reportJSON_bw_jitter_loss_format[] =
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%I64d,\"rate\":%I64d,\"jitter\":%.3f,\"error_cnt\":%d,\"pkt_cnt\":%d,\"loss_rate\":%.3f,\"out_off_order_cnt\":%d}\n";
+#else
+const char reportJSON_bw_format[] =
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%ld,\"rate\":%ld}\n";
+
+const char reportJSON_bw_jitter_loss_format[] =
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%ld,\"rate\":%ld,\"jitter\":%.3f,\"error_cnt\":%d,\"pkt_cnt\":%d,\"loss_rate\":%.3f,\"out_off_order_cnt\":%d}\n";
+#endif //WIN32
+#endif //HAVE_QUAD_SUPPORT
+
 /* -------------------------------------------------------------------
  * warnings
  * ------------------------------------------------------------------- */

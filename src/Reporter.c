@@ -78,6 +78,7 @@ void serverstatistics_notimpl( Connection_Info *nused1, Transfer_Info *nused2 ) 
 // To add a reporting style include its header here.
 #include "report_default.h"
 #include "report_CSV.h"
+#include "report_JSON.h"
 
 // The following array of report structs contains the
 // pointers required for reporting in different reporting
@@ -85,27 +86,32 @@ void serverstatistics_notimpl( Connection_Info *nused1, Transfer_Info *nused2 ) 
 // below.
 report_connection connection_reports[kReport_MAXIMUM] = {
     reporter_reportpeer,
-    CSV_peer
+    CSV_peer,
+    JSON_peer
 };
 
 report_settings settings_reports[kReport_MAXIMUM] = {
     reporter_reportsettings,
+    settings_notimpl,
     settings_notimpl
 };
 
 report_statistics statistics_reports[kReport_MAXIMUM] = {
     reporter_printstats,
-    CSV_stats
+    CSV_stats,
+    JSON_stats
 };
 
 report_serverstatistics serverstatistics_reports[kReport_MAXIMUM] = {
     reporter_serverstats,
-    CSV_serverstats
+    CSV_serverstats,
+    JSON_serverstats
 };
 
 report_statistics multiple_reports[kReport_MAXIMUM] = {
     reporter_multistats,
-    CSV_stats
+    CSV_stats,
+    JSON_stats
 };
 
 char buffer[64]; // Buffer for printing

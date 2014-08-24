@@ -138,6 +138,12 @@ extern const char reportCSV_bw_format[];
 
 extern const char reportCSV_bw_jitter_loss_format[];
 
+extern const char reportJSON_peer[];
+
+extern const char reportJSON_bw_format[];
+
+extern const char reportJSON_bw_jitter_loss_format[];
+
 /* -------------------------------------------------------------------
  * warnings
  * ------------------------------------------------------------------- */
