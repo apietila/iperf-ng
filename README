@@ -31,3 +31,7 @@ $Id: README,v 1.1.1.1 2004/05/18 01:50:44 kgibbs Exp $
   iperf -c foo.bar.edu -2 -r         (run trade-off test over the client initiated socket)
   iperf -c foo.bar.edu [-L port] -E  (ask server to do downlink test only over separate socket (local port to receive is -L port or -p port or default port)
   iperf -c foo.bar.edu -2 -E         (ask server to do downlink test over the client initiated socket)
+
+24/08/2014:	Anna-Kaisa Pietilainen <anna-kaisa.pietilainen@inria.fr>
+
+		JSON report style (-y j|J)
