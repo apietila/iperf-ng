@@ -2,6 +2,7 @@
 *~
 *.a
 src/iperf
+include/iperf-int.h
 config.h
 config.log
 *.deps*
