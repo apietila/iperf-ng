@@ -263,10 +263,10 @@ const char reportCSV_bw_jitter_loss_format[] =
 "%s,%s,%d,%.1f-%.1f,%I64d,%I64d,%.3f,%d,%d,%.3f,%d\n";
 #else
 const char reportCSV_bw_format[] =
-"%s,%s,%d,%.1f-%.1f,%ld,%ld\n";
+"%s,%s,%d,%.1f-%.1f,%lld,%lld\n";
 
 const char reportCSV_bw_jitter_loss_format[] =
-"%s,%s,%d,%.1f-%.1f,%ld,%ld,%.3f,%d,%d,%.3f,%d\n";
+"%s,%s,%d,%.1f-%.1f,%lld,%lld,%.3f,%d,%d,%.3f,%d\n";
 #endif //WIN32
 #endif //HAVE_QUAD_SUPPORT
 
@@ -296,10 +296,10 @@ const char reportJSON_bw_jitter_loss_format[] =
 "{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%I64d,\"rate\":%I64d,\"jitter\":%.3f,\"error_cnt\":%d,\"pkt_cnt\":%d,\"loss_rate\":%.3f,\"out_off_order_cnt\":%d}\n";
 #else
 const char reportJSON_bw_format[] =
-"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%ld,\"rate\":%ld}\n";
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%lld,\"rate\":%lld}\n";
 
 const char reportJSON_bw_jitter_loss_format[] =
-"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%ld,\"rate\":%ld,\"jitter\":%.3f,\"error_cnt\":%d,\"pkt_cnt\":%d,\"loss_rate\":%.3f,\"out_off_order_cnt\":%d}\n";
+"{\"time\":%s,\"connection\":%s,\"id\":%d,\"start_time\":%.1f,\"end_time\":%.1f,\"bytes\":%lld,\"rate\":%lld,\"jitter\":%.3f,\"error_cnt\":%d,\"pkt_cnt\":%d,\"loss_rate\":%.3f,\"out_off_order_cnt\":%d}\n";
 #endif //WIN32
 #endif //HAVE_QUAD_SUPPORT
 
